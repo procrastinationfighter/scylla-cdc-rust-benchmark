@@ -1,0 +1,3 @@
+[submodule "scylla-cdc-rust"]
+	path = scylla-cdc-rust
+	url = git@github.com:piodul/scylla-cdc-rust.git
