@@ -11,6 +11,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Benchmark {
     public static void main(String[] args) {
@@ -18,10 +19,13 @@ public class Benchmark {
         String source = parsedArguments.getString("source");
         String keyspace = parsedArguments.getString("keyspace"), table = parsedArguments.getString("table");
         int rowCount = Integer.parseInt(parsedArguments.getString("rowcount"));
+
+        AtomicLong checksum = new AtomicLong(0);
         CountDownLatch terminationLatch = new CountDownLatch(rowCount);
 
         RawChangeConsumerProvider changeConsumerProvider = threadId -> {
             return change -> {
+                checksum.updateAndGet(val -> val + change.getCell("ck").getLong());
                 terminationLatch.countDown();
                 return CompletableFuture.completedFuture(null);
             };
@@ -35,6 +39,7 @@ public class Benchmark {
             consumer.start();
 
             terminationLatch.await();
+            System.out.println("Scylla-cdc-java has read " + rowCount + " rows. The checksum is " + checksum.get() + ".");
         } catch (InterruptedException ex) {
             System.err.println("Exception occurred while running the Benchmark: "
                     + ex.getMessage());
