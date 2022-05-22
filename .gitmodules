@@ -1,3 +1,6 @@
 [submodule "scylla-cdc-rust"]
 	path = scylla-cdc-rust
 	url = git@github.com:piodul/scylla-cdc-rust.git
+[submodule "scylla-bench"]
+	path = scylla-bench
+	url = https://github.com/scylladb/scylla-bench
