@@ -1,6 +1,6 @@
 pub mod benchmark;
 
-use atomic_counter::ConsistentCounter;
+use atomic_counter::{AtomicCounter, ConsistentCounter, RelaxedCounter};
 use chrono::NaiveDateTime;
 use std::sync::Arc;
 use std::time::Duration;
@@ -60,10 +60,12 @@ async fn main() -> anyhow::Result<()> {
     let (sender, mut receiver) = mpsc::channel(1);
     let counter = Arc::new(ConsistentCounter::new(0));
     let limit = args.rows_count;
+    let checksum = Arc::new(RelaxedCounter::new(0));
     let factory = Arc::new(BenchmarkConsumerFactory {
         counter,
         limit,
         sender: sender.clone(),
+        checksum: Arc::clone(&checksum),
     });
 
     let start_date_time =
@@ -84,6 +86,6 @@ async fn main() -> anyhow::Result<()> {
 
     receiver.recv().await.unwrap();
 
-    println!("Scylla-cdc-rust has read {} rows!", limit);
+    println!("Scylla-cdc-rust has read {} rows! The checksum is {}.", limit, checksum.get());
     Ok(())
 }
