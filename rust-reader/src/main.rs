@@ -1,7 +1,6 @@
 pub mod benchmark;
 
 use atomic_counter::{AtomicCounter, ConsistentCounter, RelaxedCounter};
-use chrono::NaiveDateTime;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::mpsc;
@@ -32,16 +31,12 @@ struct Args {
     window_size: f64,
 
     /// Safety interval in seconds
-    #[clap(long, default_value_t = 5.)]
+    #[clap(long, default_value_t = 30.)]
     safety_interval: f64,
 
     /// Sleep interval in seconds
     #[clap(long, default_value_t = 2.)]
     sleep_interval: f64,
-
-    /// Starting timestamp, format: %Y-%m-%d %H:%M:%S
-    #[clap(short, long)]
-    start_timestamp: String,
 
     /// Sleep interval in seconds
     #[clap(long, default_value_t = 10)]
@@ -68,24 +63,24 @@ async fn main() -> anyhow::Result<()> {
         checksum: Arc::clone(&checksum),
     });
 
-    let start_date_time =
-        NaiveDateTime::parse_from_str(&args.start_timestamp, "%Y-%m-%d %H:%M:%S").unwrap();
-
-    let start = chrono::Duration::milliseconds(start_date_time.timestamp_millis());
-    let (_, _handle) = CDCLogReaderBuilder::new()
+    // To simulate Java behavior:
+    // - start from the start of the first generation
+    // - sleep for 1 ms (java does not sleep at all)
+    let (mut reader, handle) = CDCLogReaderBuilder::new()
         .session(session)
         .keyspace(&args.keyspace)
         .table_name(&args.table)
         .window_size(Duration::from_secs_f64(args.window_size))
         .safety_interval(Duration::from_secs_f64(args.safety_interval))
-        .sleep_interval(Duration::from_secs_f64(args.sleep_interval))
+        .sleep_interval(Duration::from_millis(1))
         .consumer_factory(factory)
-        .start_timestamp(start)
+        .start_timestamp(chrono::Duration::zero())
         .build()
         .await?;
 
     receiver.recv().await.unwrap();
 
     println!("Scylla-cdc-rust has read {} rows! The checksum is {}.", limit, checksum.get());
-    Ok(())
+    reader.stop();
+    handle.await
 }
