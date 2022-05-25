@@ -19,6 +19,7 @@ public class Benchmark {
         String source = parsedArguments.getString("source");
         String keyspace = parsedArguments.getString("keyspace"), table = parsedArguments.getString("table");
         int rowCount = Integer.parseInt(parsedArguments.getString("rowcount"));
+        long windowSize = Long.parseLong(parsedArguments.getString("window"));
 
         AtomicLong checksum = new AtomicLong(0);
         CountDownLatch terminationLatch = new CountDownLatch(rowCount);
@@ -35,6 +36,7 @@ public class Benchmark {
                 .addContactPoint(source)
                 .addTable(new TableName(keyspace, table))
                 .withConsumerProvider(changeConsumerProvider)
+                .withConfidenceWindowSizeMs(windowSize)
                 .build()) {
             consumer.start();
 
@@ -53,6 +55,7 @@ public class Benchmark {
         parser.addArgument("-s", "--source").required(true)
                 .setDefault("127.0.0.1").help("Address of a node in source cluster");
         parser.addArgument("-c", "--rowcount").required(true).help("Number of rows to read.");
+        parser.addArgument("-w", "--window").required(true).help("Size of the time window in milliseconds.");
 
         try {
             return parser.parseArgs(args);
