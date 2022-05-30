@@ -36,7 +36,7 @@ public class Benchmark {
                 .addContactPoint(source)
                 .addTable(new TableName(keyspace, table))
                 .withConsumerProvider(changeConsumerProvider)
-                .withConfidenceWindowSizeMs(windowSize)
+                .withQueryTimeWindowSizeMs(windowSize)
                 .build()) {
             consumer.start();
 
