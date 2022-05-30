@@ -7,6 +7,7 @@ RATE_PER_SHARD = 5000
 
 rust_binary = "rust-reader/target/release/scylla-cdc-rust-benchmark"
 java_binary = "java-reader/cdc-rust-benchmark/cdc-rust-benchmark"
+rust_optimized_binary = "rust-optimized-reader/reader/target/release/scylla-cdc-rust-benchmark-opt"
 scylla_bench_binary = "scylla-bench/scylla-bench"
 keyspace = "scylla_bench"
 table = "test"
@@ -51,6 +52,20 @@ def run_rust(source: str, rows_count: int, window_size: int):
         subprocess.run(command, stdout=output_file, stderr=output_file)
 
 
+def run_opt_rust(source: str, rows_count: int, window_size: int):
+    command = ["/usr/bin/time", "-v",
+               rust_optimized_binary,
+               "--keyspace", keyspace,
+               "--table", table,
+               "--hostname", f"{source}:9042",
+               "--rows-count", f"{rows_count}",
+               "--window-size", f"{window_size}.0"]
+
+    print("Running the benchmark for scylla-cdc-rust (optimized).")
+    with open(f"results/rust_opt_{window_size}.txt", "w") as output_file:
+        subprocess.run(command, stdout=output_file, stderr=output_file)
+
+
 def run_java(source: str, rows_count: int, window_size: int):
     command = ["/usr/bin/time", "-v",
                java_binary,
@@ -68,6 +83,7 @@ def run_java(source: str, rows_count: int, window_size: int):
 def run_tests(source: str, rows_count: int, window_size: int):
     print(f"Running the benchmark with window size equal to {window_size} seconds.")
     run_rust(source, rows_count, window_size)
+    run_opt_rust(source, rows_count, window_size)
     run_java(source, rows_count, window_size)
     print(f"The benchmark for window size {window_size} has finished!")
 

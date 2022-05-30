@@ -3,3 +3,5 @@ rust-reader/Cargo.lock
 rust-reader/target
 venv/
 *.txt
+/rust-optimized-reader/reader/Cargo.lock
+/rust-optimized-reader/reader/target/
