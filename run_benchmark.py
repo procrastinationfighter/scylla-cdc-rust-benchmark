@@ -3,7 +3,8 @@ from cassandra.cluster import Cluster
 import subprocess
 import time
 
-# TODO: Configure parameters: safety interval etc.
+RATE_PER_SHARD = 5000
+
 rust_binary = "rust-reader/target/release/scylla-cdc-rust-benchmark"
 java_binary = "java-reader/cdc-rust-benchmark/cdc-rust-benchmark"
 scylla_bench_binary = "scylla-bench/scylla-bench"
@@ -17,7 +18,7 @@ def prepare_database(source: str, partition_count: int, clustering_row_count: in
     cluster = Cluster([source])
     session = cluster.connect()
     session.execute(f"CREATE KEYSPACE IF NOT EXISTS {keyspace} "
-                    f"WITH replication = {{'class': 'SimpleStrategy', 'replication_factor': 1}}")
+                    f"WITH replication = {{'class': 'SimpleStrategy', 'replication_factor': 3}}")
     session.execute(f"CREATE TABLE IF NOT EXISTS {keyspace}.{table} "
                     f"(pk bigint, ck bigint, v blob, primary key (pk, ck))"
                     f"WITH cdc = {{'enabled': 'true'}} AND compression = {{ }}")
@@ -46,7 +47,7 @@ def run_rust(source: str, rows_count: int, window_size: int):
                "--window-size", f"{window_size}.0"]
 
     print("Running the benchmark for scylla-cdc-rust.")
-    with open(f"rust_{window_size}.txt", "w") as output_file:
+    with open(f"results/rust_{window_size}.txt", "w") as output_file:
         subprocess.run(command, stdout=output_file, stderr=output_file)
 
 
@@ -60,7 +61,7 @@ def run_java(source: str, rows_count: int, window_size: int):
                "-w", f"{window_size * 1000}"]
 
     print("Running the benchmark for scylla-cdc-java.")
-    with open(f"java_{window_size}.txt", "w") as output_file:
+    with open(f"results/java_{window_size}.txt", "w") as output_file:
         subprocess.run(command, stdout=output_file, stderr=output_file)
 
 
@@ -74,14 +75,14 @@ def run_tests(source: str, rows_count: int, window_size: int):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--source", type=str)
-    parser.add_argument("--partition_count", default=10000, type=int)
-    parser.add_argument("--clustering_row_count", default=1000, type=int)
-    parser.add_argument("--max_rate", default=20000, type=int)
+    parser.add_argument("--partition_count", default=40000, type=int)
+    parser.add_argument("--clustering_row_count", default=2000, type=int)
+    parser.add_argument("--shards", default=4, type=int)
 
     args = parser.parse_args()
     source = args.source
 
-    prepare_database(source, args.partition_count, args.clustering_row_count, args.max_rate)
+    prepare_database(source, args.partition_count, args.clustering_row_count, args.shards * RATE_PER_SHARD)
 
     # After creating the database, sleep for 60 seconds so that the window size doesn't ruin the benchmark.
     print("Waiting...")
