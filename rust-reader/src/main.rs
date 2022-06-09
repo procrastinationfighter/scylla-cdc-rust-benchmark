@@ -1,6 +1,6 @@
 pub mod benchmark;
 
-use atomic_counter::{AtomicCounter, ConsistentCounter, RelaxedCounter};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::mpsc;
@@ -53,9 +53,9 @@ async fn main() -> anyhow::Result<()> {
             .await?,
     );
     let (sender, mut receiver) = mpsc::channel(1);
-    let counter = Arc::new(ConsistentCounter::new(0));
+    let counter = Arc::new(AtomicUsize::new(0));
     let limit = args.rows_count;
-    let checksum = Arc::new(RelaxedCounter::new(0));
+    let checksum = Arc::new(AtomicUsize::new(0));
     let factory = Arc::new(BenchmarkConsumerFactory {
         counter,
         limit,
@@ -80,7 +80,11 @@ async fn main() -> anyhow::Result<()> {
 
     receiver.recv().await.unwrap();
 
-    println!("Scylla-cdc-rust has read {} rows! The checksum is {}.", limit, checksum.get());
+    println!(
+        "Scylla-cdc-rust has read {} rows! The checksum is {}.",
+        limit,
+        checksum.load(Ordering::SeqCst)
+    );
     reader.stop();
     handle.await
 }

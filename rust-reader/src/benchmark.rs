@@ -1,23 +1,26 @@
 use anyhow;
 use async_trait::async_trait;
-use atomic_counter::{AtomicCounter, ConsistentCounter, RelaxedCounter};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
 
 use scylla_cdc::consumer::{CDCRow, Consumer, ConsumerFactory};
 
 struct BenchmarkConsumer {
-    counter: Arc<ConsistentCounter>,
+    counter: Arc<AtomicUsize>,
     limit: usize,
     sender: Sender<()>,
-    checksum: Arc<RelaxedCounter>,
+    checksum: Arc<AtomicUsize>,
 }
 
 #[async_trait]
 impl Consumer for BenchmarkConsumer {
     async fn consume_cdc(&mut self, mut data: CDCRow<'_>) -> anyhow::Result<()> {
-        self.checksum.add(data.take_value("ck").unwrap().as_bigint().unwrap() as usize);
-        let old = self.counter.inc();
+        self.checksum.fetch_add(
+            data.take_value("ck").unwrap().as_bigint().unwrap() as usize,
+            Ordering::SeqCst,
+        );
+        let old = self.counter.fetch_add(1, Ordering::SeqCst);
         if old + 1 >= self.limit {
             self.sender.send(()).await.unwrap();
         }
@@ -26,10 +29,10 @@ impl Consumer for BenchmarkConsumer {
 }
 
 pub struct BenchmarkConsumerFactory {
-    pub counter: Arc<ConsistentCounter>,
+    pub counter: Arc<AtomicUsize>,
     pub limit: usize,
     pub sender: Sender<()>,
-    pub checksum: Arc<RelaxedCounter>,
+    pub checksum: Arc<AtomicUsize>,
 }
 
 #[async_trait]
