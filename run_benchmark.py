@@ -14,7 +14,7 @@ table = "test"
 time_command = "/usr/bin/time -v"
 
 
-def prepare_database(source: str, partition_count: int, clustering_row_count: int, max_rate: int):
+def prepare_database(source, partition_count, clustering_row_count, max_rate):
     cluster = Cluster([source])
     session = cluster.connect()
     session.execute(f"CREATE KEYSPACE IF NOT EXISTS {keyspace} "
@@ -38,7 +38,7 @@ def prepare_database(source: str, partition_count: int, clustering_row_count: in
     print("Data written!")
 
 
-def run_rust(source: str, rows_count: int, window_size: int):
+def run_rust(source, rows_count, window_size):
     command = ["/usr/bin/time", "-v",
                rust_binary,
                "--keyspace", keyspace,
@@ -52,7 +52,7 @@ def run_rust(source: str, rows_count: int, window_size: int):
         subprocess.run(command, stdout=output_file, stderr=output_file)
 
 
-def run_java(source: str, rows_count: int, window_size: int):
+def run_java(source, rows_count, window_size):
     command = ["/usr/bin/time", "-v",
                java_binary,
                "-k", keyspace,
@@ -66,7 +66,7 @@ def run_java(source: str, rows_count: int, window_size: int):
         subprocess.run(command, stdout=output_file, stderr=output_file)
 
 
-def run_tests(source: str, rows_count: int, window_size: int):
+def run_tests(source, rows_count, window_size):
     print(f"Running the benchmark with window size equal to {window_size} seconds.")
     run_rust(source, rows_count, window_size)
     run_java(source, rows_count, window_size)
