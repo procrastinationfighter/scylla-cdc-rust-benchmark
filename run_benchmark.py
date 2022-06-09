@@ -30,6 +30,7 @@ def prepare_database(source: str, partition_count: int, clustering_row_count: in
                "-workload", "sequential",
                "-partition-count", f"{partition_count}",
                "-clustering-row-count", f"{clustering_row_count}",
+               "-concurrency", "500",
                "-max-rate", f"{max_rate}"]
 
     subprocess.run(command, stdout=subprocess.DEVNULL)
@@ -78,11 +79,13 @@ def main():
     parser.add_argument("--partition_count", default=40000, type=int)
     parser.add_argument("--clustering_row_count", default=2000, type=int)
     parser.add_argument("--shards", default=4, type=int)
+    parser.add_argument("--prepare_db", action="store_true")
 
     args = parser.parse_args()
     source = args.source
 
-    prepare_database(source, args.partition_count, args.clustering_row_count, args.shards * RATE_PER_SHARD)
+    if args.prepare_db:
+        prepare_database(source, args.partition_count, args.clustering_row_count, args.shards * RATE_PER_SHARD)
 
     # After creating the database, sleep for 60 seconds so that the window size doesn't ruin the benchmark.
     print("Waiting...")
