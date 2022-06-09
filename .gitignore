@@ -3,3 +3,4 @@ rust-reader/Cargo.lock
 rust-reader/target
 venv/
 *.txt
+__pycache__/
