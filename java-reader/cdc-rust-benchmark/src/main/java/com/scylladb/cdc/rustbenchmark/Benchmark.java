@@ -22,12 +22,15 @@ public class Benchmark {
         long windowSize = Long.parseLong(parsedArguments.getString("window"));
 
         AtomicLong checksum = new AtomicLong(0);
-        CountDownLatch terminationLatch = new CountDownLatch(rowCount);
+        AtomicLong rowsToRead = new AtomicLong(rowCount);
+        CountDownLatch terminationLatch = new CountDownLatch(1);
 
         RawChangeConsumerProvider changeConsumerProvider = threadId -> {
             return change -> {
-                checksum.updateAndGet(val -> val + change.getCell("ck").getLong());
-                terminationLatch.countDown();
+                checksum.addAndGet(change.getCell("ck").getLong());
+                if (rowsToRead.addAndGet(-1) == 0) {
+                    terminationLatch.countDown();
+                }
                 return CompletableFuture.completedFuture(null);
             };
         };
