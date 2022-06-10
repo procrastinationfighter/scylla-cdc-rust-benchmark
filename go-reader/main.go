@@ -12,9 +12,10 @@ import (
 	"time"
 )
 
+var wg sync.WaitGroup
+
 type BenchmarkConsumer struct {
 	sum *int64
-	wg  *sync.WaitGroup
 }
 
 func (bc BenchmarkConsumer) Consume(_ context.Context, change scyllacdc.Change) error {
@@ -22,7 +23,7 @@ func (bc BenchmarkConsumer) Consume(_ context.Context, change scyllacdc.Change) 
 		val, _ := rowChange.GetValue("ck")
 		v := val.(*int64)
 		atomic.AddInt64(bc.sum, *v)
-		bc.wg.Done()
+		wg.Done()
 	}
 	return nil
 }
@@ -33,7 +34,6 @@ func (bc BenchmarkConsumer) End() error {
 
 type BenchmarkConsumerFactory struct {
 	sum *int64
-	wg  *sync.WaitGroup
 }
 
 func (bcf BenchmarkConsumerFactory) CreateChangeConsumer(ctx context.Context, input scyllacdc.CreateChangeConsumerInput) (scyllacdc.ChangeConsumer, error) {
@@ -41,12 +41,12 @@ func (bcf BenchmarkConsumerFactory) CreateChangeConsumer(ctx context.Context, in
 }
 
 func makeBenchmarkConsumerFactory(sum *int64, wg *sync.WaitGroup) BenchmarkConsumerFactory {
-	return BenchmarkConsumerFactory{sum: sum, wg: wg}
+	return BenchmarkConsumerFactory{sum: sum}
 }
 
 func run(cmd *cobra.Command, args []string) {
 	sum := int64(0)
-	wg := sync.WaitGroup{}
+	wg = sync.WaitGroup{}
 	wg.Add(rowsCount)
 
 	factory := makeBenchmarkConsumerFactory(&sum, &wg)
