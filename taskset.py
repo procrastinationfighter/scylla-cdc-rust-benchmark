@@ -72,10 +72,7 @@ def run_tests(source, rows_count, window_size):
     print(f"Running the benchmark with window size equal to {window_size} seconds.")
     for cores in [1, 2, 4, 8]:
         print("Running with", cores, "cores.")
-        run_rust(source, rows_count, window_size)
-        print("Rust has finished! Waiting...")
-        time.sleep(30.0)
-        run_java(source, rows_count, window_size)
+        run_java(source, rows_count, window_size, cores)
         print("Java has finished! Waiting...")
         time.sleep(30.0)
     print(f"The benchmark for window size {window_size} has finished!")
