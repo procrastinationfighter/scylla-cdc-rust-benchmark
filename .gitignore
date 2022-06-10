@@ -4,3 +4,4 @@ rust-reader/target
 venv/
 *.txt
 __pycache__/
+go-reader/go-reader
