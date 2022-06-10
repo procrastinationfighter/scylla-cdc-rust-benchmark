@@ -8,7 +8,7 @@ RATE_PER_SHARD = 5000
 rust_binary = "rust-reader/target/release/scylla-cdc-rust-benchmark"
 go_binary = "go-reader/go-reader"
 java_binary = "java-reader/cdc-rust-benchmark/cdc-rust-benchmark"
-scylla_bench_binary = "scylla-bench/scylla-bench"
+scylla_bench_binary = "scylla-bench"
 keyspace = "scylla_bench"
 table = "test"
 
