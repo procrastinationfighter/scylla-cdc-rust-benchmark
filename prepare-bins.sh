@@ -2,7 +2,11 @@
 mkdir results
 
 cd rust-reader
+cargo update
 cargo build --release
+
+cd ../go-reader
+go build
 
 cd ../java-reader/cdc-rust-benchmark
 mvn package
