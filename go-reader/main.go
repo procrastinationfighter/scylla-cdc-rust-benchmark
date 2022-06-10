@@ -86,15 +86,15 @@ func run(cmd *cobra.Command, args []string) {
 	}
 
 	go func() {
-		err := reader.Run(ctx)
-		if err != nil {
-			panic(err)
-		}
+		wg.Wait()
+		fmt.Println("Scylla-cdc-rust has read ", rowsCount, " rows! The checksum is ", sum, ".")
+		reader.Stop()
 	}()
 
-	wg.Wait()
-	fmt.Println("Scylla-cdc-rust has read ", rowsCount, " rows! The checksum is ", sum, ".")
-	reader.Stop()
+	err = reader.Run(ctx)
+	if err != nil {
+		panic(err)
+	}
 }
 
 var rootCmd = &cobra.Command{Use: "app", Run: run}
