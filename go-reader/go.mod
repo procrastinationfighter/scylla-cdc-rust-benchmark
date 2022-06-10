@@ -2,7 +2,10 @@ module go-reader
 
 go 1.18
 
-replace github.com/scylladb/scylla-cdc-go => github.com/Ponewor/scylla-cdc-go v1.1.0
+replace (
+	github.com/gocql/gocql => github.com/scylladb/gocql v1.5.0
+	github.com/scylladb/scylla-cdc-go => github.com/Ponewor/scylla-cdc-go v1.1.0
+)
 
 require (
 	github.com/gocql/gocql v0.0.0-20201215165327-e49edf966d90
