@@ -6,6 +6,7 @@ import time
 RATE_PER_SHARD = 5000
 
 rust_binary = "rust-reader/target/release/scylla-cdc-rust-benchmark"
+go_binary = "go-reader/go-reader"
 java_binary = "java-reader/cdc-rust-benchmark/cdc-rust-benchmark"
 scylla_bench_binary = "scylla-bench/scylla-bench"
 keyspace = "scylla_bench"
@@ -19,7 +20,8 @@ def prepare_database(source, partition_count, clustering_row_count, max_rate):
     session = cluster.connect()
     session.execute(f"CREATE KEYSPACE IF NOT EXISTS {keyspace} "
                     f"WITH replication = {{'class': 'SimpleStrategy', 'replication_factor': 3}}")
-    session.execute(f"CREATE TABLE IF NOT EXISTS {keyspace}.{table} "
+    session.execute(f"DROP TABLE {keyspace}.{table}")
+    session.execute(f"CREATE TABLE {keyspace}.{table} "
                     f"(pk bigint, ck bigint, v blob, primary key (pk, ck))"
                     f"WITH cdc = {{'enabled': 'true'}} AND compression = {{ }}")
 
@@ -52,6 +54,20 @@ def run_rust(source, rows_count, window_size):
         subprocess.run(command, stdout=output_file, stderr=output_file)
 
 
+def run_go(source: str, rows_count: int, window_size: int):
+    command = ["/usr/bin/time", "-v",
+               go_binary,
+               "--keyspace", keyspace,
+               "--table", table,
+               "--hostname", f"{source}:9042",
+               "--rows-count", f"{rows_count}",
+               "--window-size", f"{window_size}"]
+
+    print("Running the benchmark for scylla-cdc-go.")
+    with open(f"results/go_{window_size}.txt", "w") as output_file:
+        subprocess.run(command, stdout=output_file, stderr=output_file)
+
+
 def run_java(source, rows_count, window_size):
     command = ["/usr/bin/time", "-v",
                java_binary,
@@ -69,6 +85,7 @@ def run_java(source, rows_count, window_size):
 def run_tests(source, rows_count, window_size):
     print(f"Running the benchmark with window size equal to {window_size} seconds.")
     run_rust(source, rows_count, window_size)
+    run_go(source, rows_count, window_size)
     run_java(source, rows_count, window_size)
     print(f"The benchmark for window size {window_size} has finished!")
 
