@@ -7,18 +7,22 @@ import (
 	"github.com/scylladb/scylla-cdc-go"
 	"github.com/spf13/cobra"
 	"math"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
 type BenchmarkConsumer struct {
-	ch chan int64
+	sum *int64
+	wg  *sync.WaitGroup
 }
 
 func (bc BenchmarkConsumer) Consume(_ context.Context, change scyllacdc.Change) error {
 	for _, rowChange := range change.Delta {
 		val, _ := rowChange.GetValue("ck")
 		v := val.(*int64)
-		bc.ch <- *v
+		atomic.AddInt64(bc.sum, *v)
+		bc.wg.Done()
 	}
 	return nil
 }
@@ -28,21 +32,24 @@ func (bc BenchmarkConsumer) End() error {
 }
 
 type BenchmarkConsumerFactory struct {
-	ch chan int64
+	sum *int64
+	wg  *sync.WaitGroup
 }
 
 func (bcf BenchmarkConsumerFactory) CreateChangeConsumer(ctx context.Context, input scyllacdc.CreateChangeConsumerInput) (scyllacdc.ChangeConsumer, error) {
-	return BenchmarkConsumer{ch: bcf.ch}, nil
+	return BenchmarkConsumer{sum: bcf.sum}, nil
 }
 
-func makeBenchmarkConsumerFactory(ch chan int64) BenchmarkConsumerFactory {
-	return BenchmarkConsumerFactory{ch: ch}
+func makeBenchmarkConsumerFactory(sum *int64, wg *sync.WaitGroup) BenchmarkConsumerFactory {
+	return BenchmarkConsumerFactory{sum: sum, wg: wg}
 }
 
 func run(cmd *cobra.Command, args []string) {
-	checksumChan := make(chan int64, rowsCount)
+	sum := int64(0)
+	wg := sync.WaitGroup{}
+	wg.Add(rowsCount)
 
-	factory := makeBenchmarkConsumerFactory(checksumChan)
+	factory := makeBenchmarkConsumerFactory(&sum, &wg)
 
 	ctx := context.TODO()
 
@@ -79,14 +86,9 @@ func run(cmd *cobra.Command, args []string) {
 			panic(err)
 		}
 	}()
-	checksum := int64(0)
 
-	for i := 0; i < rowsCount; i++ {
-		x := <-checksumChan
-		checksum += x
-	}
-
-	fmt.Println("Scylla-cdc-rust has read ", rowsCount, " rows! The checksum is ", checksum, ".")
+	wg.Wait()
+	fmt.Println("Scylla-cdc-rust has read ", rowsCount, " rows! The checksum is ", sum, ".")
 	reader.Stop()
 }
 
