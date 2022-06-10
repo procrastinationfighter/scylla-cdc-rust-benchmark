@@ -84,11 +84,11 @@ def run_java(source, rows_count, window_size):
 
 def run_tests(source, rows_count, window_size):
     print(f"Running the benchmark with window size equal to {window_size} seconds.")
-    run_rust(source, rows_count, window_size)
-    print("Rust has finished. Waiting...")
-    time.sleep(60.0)
     run_go(source, rows_count, window_size)
     print("Go has finished. Waiting...")
+    time.sleep(60.0)
+    run_rust(source, rows_count, window_size)
+    print("Rust has finished. Waiting...")
     time.sleep(60.0)
     run_java(source, rows_count, window_size)
     print(f"The benchmark for window size {window_size} has finished!")
