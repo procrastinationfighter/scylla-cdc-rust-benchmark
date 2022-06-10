@@ -3,8 +3,8 @@ module go-reader
 go 1.18
 
 replace (
-	github.com/gocql/gocql => github.com/scylladb/gocql v1.5.0
-	github.com/scylladb/scylla-cdc-go => github.com/Ponewor/scylla-cdc-go v1.1.0
+	github.com/gocql/gocql => ../../gocql
+	github.com/scylladb/scylla-cdc-go => ../../scylla-cdc-go
 )
 
 require (
@@ -14,7 +14,7 @@ require (
 )
 
 require (
-	github.com/golang/snappy v0.0.0-20170215233205-553a64147049 // indirect
+	github.com/golang/snappy v0.0.3 // indirect
 	github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect

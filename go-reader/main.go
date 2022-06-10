@@ -7,18 +7,23 @@ import (
 	"github.com/scylladb/scylla-cdc-go"
 	"github.com/spf13/cobra"
 	"math"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
+var wg sync.WaitGroup
+
 type BenchmarkConsumer struct {
-	ch chan int64
+	sum *int64
 }
 
 func (bc BenchmarkConsumer) Consume(_ context.Context, change scyllacdc.Change) error {
 	for _, rowChange := range change.Delta {
 		val, _ := rowChange.GetValue("ck")
 		v := val.(*int64)
-		bc.ch <- *v
+		atomic.AddInt64(bc.sum, *v)
+		wg.Done()
 	}
 	return nil
 }
@@ -28,31 +33,37 @@ func (bc BenchmarkConsumer) End() error {
 }
 
 type BenchmarkConsumerFactory struct {
-	ch chan int64
+	sum *int64
 }
 
 func (bcf BenchmarkConsumerFactory) CreateChangeConsumer(ctx context.Context, input scyllacdc.CreateChangeConsumerInput) (scyllacdc.ChangeConsumer, error) {
-	return BenchmarkConsumer{ch: bcf.ch}, nil
+	return BenchmarkConsumer{sum: bcf.sum}, nil
 }
 
-func makeBenchmarkConsumerFactory(ch chan int64) BenchmarkConsumerFactory {
-	return BenchmarkConsumerFactory{ch: ch}
+func makeBenchmarkConsumerFactory(sum *int64, wg *sync.WaitGroup) BenchmarkConsumerFactory {
+	return BenchmarkConsumerFactory{sum: sum}
 }
 
 func run(cmd *cobra.Command, args []string) {
-	checksumChan := make(chan int64, rowsCount)
+	sum := int64(0)
+	wg = sync.WaitGroup{}
+	wg.Add(rowsCount)
 
-	factory := makeBenchmarkConsumerFactory(checksumChan)
+	factory := makeBenchmarkConsumerFactory(&sum, &wg)
 
 	ctx := context.TODO()
 
 	cluster := gocql.NewCluster(hostname)
 	cluster.PoolConfig.HostSelectionPolicy = gocql.TokenAwareHostPolicy(gocql.RoundRobinHostPolicy())
+	cluster.Timeout = time.Second * 10
+	cluster.ConnectTimeout = time.Second * 10
 	session, err := cluster.CreateSession()
 	if err != nil {
 		panic(err)
 	}
 	defer session.Close()
+
+	time.Sleep(time.Second * 10)
 
 	cfg := scyllacdc.ReaderConfig{
 		Session:               session,
@@ -66,6 +77,7 @@ func run(cmd *cobra.Command, args []string) {
 			PostFailedQueryDelay:   time.Duration(int64(sleepInterval * math.Pow10(9))),
 			PostNonEmptyQueryDelay: time.Duration(int64(sleepInterval * math.Pow10(9))),
 		},
+		Logger: CustomLogger{},
 	}
 
 	reader, err := scyllacdc.NewReader(ctx, &cfg)
@@ -79,14 +91,9 @@ func run(cmd *cobra.Command, args []string) {
 			panic(err)
 		}
 	}()
-	checksum := int64(0)
 
-	for i := 0; i < rowsCount; i++ {
-		x := <-checksumChan
-		checksum += x
-	}
-
-	fmt.Println("Scylla-cdc-rust has read ", rowsCount, " rows! The checksum is ", checksum, ".")
+	wg.Wait()
+	fmt.Println("Scylla-cdc-rust has read ", rowsCount, " rows! The checksum is ", sum, ".")
 	reader.Stop()
 }
 
@@ -111,6 +118,13 @@ func init() {
 	rootCmd.PersistentFlags().Float64Var(&sleepInterval, "sleep-interval", 0.001, "sleep interval")
 
 	rootCmd.PersistentFlags().IntVar(&rowsCount, "rows-count", 0, "rows count")
+}
+
+type CustomLogger struct{}
+
+func (cl CustomLogger) Printf(format string, v ...interface{}) {
+	fmt.Printf(format, v)
+	fmt.Println()
 }
 
 func main() {
