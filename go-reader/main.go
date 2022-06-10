@@ -73,9 +73,9 @@ func run(cmd *cobra.Command, args []string) {
 			ConfidenceWindowSize:   time.Duration(int64(windowSize * math.Pow10(9))),
 			QueryTimeWindowSize:    time.Duration(int64(windowSize * math.Pow10(9))),
 			ChangeAgeLimit:         time.Hour * 24 * 7,
-			PostEmptyQueryDelay:    time.Duration(int64(sleepInterval * math.Pow10(9))),
-			PostFailedQueryDelay:   time.Duration(int64(sleepInterval * math.Pow10(9))),
-			PostNonEmptyQueryDelay: time.Duration(int64(sleepInterval * math.Pow10(9))),
+			PostEmptyQueryDelay:    time.Second * 10,
+			PostFailedQueryDelay:   time.Second * 10,
+			PostNonEmptyQueryDelay: time.Second * 10,
 		},
 		Logger: CustomLogger{},
 	}
