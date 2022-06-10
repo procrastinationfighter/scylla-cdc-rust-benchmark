@@ -40,7 +40,7 @@ func makeBenchmarkConsumerFactory(ch chan int64) BenchmarkConsumerFactory {
 }
 
 func run(cmd *cobra.Command, args []string) {
-	checksumChan := make(chan int64, 100)
+	checksumChan := make(chan int64, rowsCount)
 
 	factory := makeBenchmarkConsumerFactory(checksumChan)
 
