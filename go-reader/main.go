@@ -77,7 +77,6 @@ func run(cmd *cobra.Command, args []string) {
 			PostFailedQueryDelay:   time.Duration(int64(sleepInterval * math.Pow10(9))),
 			PostNonEmptyQueryDelay: time.Duration(int64(sleepInterval * math.Pow10(9))),
 		},
-		Logger: CustomLogger{},
 	}
 
 	reader, err := scyllacdc.NewReader(ctx, &cfg)
@@ -118,13 +117,6 @@ func init() {
 	rootCmd.PersistentFlags().Float64Var(&sleepInterval, "sleep-interval", 0.001, "sleep interval")
 
 	rootCmd.PersistentFlags().IntVar(&rowsCount, "rows-count", 0, "rows count")
-}
-
-type CustomLogger struct{}
-
-func (cl CustomLogger) Printf(format string, v ...interface{}) {
-	fmt.Printf(format, v)
-	fmt.Println()
 }
 
 func main() {
