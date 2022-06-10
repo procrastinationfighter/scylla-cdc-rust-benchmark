@@ -124,6 +124,7 @@ type CustomLogger struct{}
 
 func (cl CustomLogger) Printf(format string, v ...interface{}) {
 	fmt.Printf(format, v)
+	fmt.Println()
 }
 
 func main() {
