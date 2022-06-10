@@ -19,7 +19,8 @@ def prepare_database(source, partition_count, clustering_row_count, max_rate):
     session = cluster.connect()
     session.execute(f"CREATE KEYSPACE IF NOT EXISTS {keyspace} "
                     f"WITH replication = {{'class': 'SimpleStrategy', 'replication_factor': 3}}")
-    session.execute(f"CREATE TABLE IF NOT EXISTS {keyspace}.{table} "
+    session.execute(f"DROP TABLE {keyspace}.{table}")
+    session.execute(f"CREATE TABLE {keyspace}.{table} "
                     f"(pk bigint, ck bigint, v blob, primary key (pk, ck))"
                     f"WITH cdc = {{'enabled': 'true'}} AND compression = {{ }}")
 
