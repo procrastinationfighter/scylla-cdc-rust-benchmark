@@ -55,6 +55,8 @@ func run(cmd *cobra.Command, args []string) {
 
 	cluster := gocql.NewCluster(hostname)
 	cluster.PoolConfig.HostSelectionPolicy = gocql.TokenAwareHostPolicy(gocql.RoundRobinHostPolicy())
+	cluster.Timeout = time.Second * 10
+	cluster.ConnectTimeout = time.Second * 10
 	session, err := cluster.CreateSession()
 	if err != nil {
 		panic(err)
