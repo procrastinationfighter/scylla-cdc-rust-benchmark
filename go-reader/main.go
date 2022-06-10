@@ -61,6 +61,8 @@ func run(cmd *cobra.Command, args []string) {
 	}
 	defer session.Close()
 
+	time.Sleep(time.Second * 10)
+
 	cfg := scyllacdc.ReaderConfig{
 		Session:               session,
 		TableNames:            []string{keyspace + "." + table},
