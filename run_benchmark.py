@@ -103,10 +103,9 @@ def main():
 
     if args.prepare_db:
         prepare_database(source, args.partition_count, args.clustering_row_count, args.shards * RATE_PER_SHARD)
-
-    # After creating the database, sleep for 60 seconds so that the window size doesn't ruin the benchmark.
-    print("Waiting...")
-    time.sleep(60.0)
+        # After creating the database, sleep for 60 seconds so that the window size doesn't ruin the benchmark.
+        print("Waiting...")
+        time.sleep(60.0)
 
     rows_count = args.partition_count * args.clustering_row_count
 
